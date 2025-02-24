@@ -2,6 +2,7 @@
 import { EmotionCheck } from "@/components/EmotionCheck";
 import { WellnessProgress } from "@/components/WellnessProgress";
 import { CopingStrategies } from "@/components/CopingStrategies";
+import { AIChat } from "@/components/AIChat";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { LogOut } from "lucide-react";
@@ -34,6 +35,7 @@ const Index = () => {
         <div className="grid gap-8">
           <EmotionCheck />
           <WellnessProgress />
+          <AIChat />
           <CopingStrategies />
         </div>
       </div>
