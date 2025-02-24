@@ -8,6 +8,7 @@ const corsHeaders = {
 }
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
+const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -17,7 +18,7 @@ serve(async (req) => {
   try {
     const { audio } = await req.json()
 
-    // First, convert speech to text
+    // First, convert speech to text using Whisper API (still using OpenAI for this part)
     const formData = new FormData()
     const audioBlob = await fetch(`data:audio/webm;base64,${audio}`).then(r => r.blob())
     formData.append('file', audioBlob, 'audio.webm')
@@ -33,27 +34,28 @@ serve(async (req) => {
 
     const { text } = await transcriptionResponse.json()
 
-    // Then, analyze sentiment
-    const sentimentResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Then, analyze sentiment using Gemini
+    const sentimentResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'Analyze the sentiment of the following text and respond with only one word: "positive", "negative", or "neutral".' 
-          },
-          { role: 'user', content: text }
-        ],
-      }),
+        contents: [{
+          role: "user",
+          parts: [{
+            text: `Analyze the sentiment of the following text and respond with only one word: "positive", "negative", or "neutral". Text to analyze: "${text}"`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0,
+          maxOutputTokens: 1
+        }
+      })
     })
 
     const sentimentData = await sentimentResponse.json()
-    const sentiment = sentimentData.choices[0].message.content.toLowerCase().trim()
+    const sentiment = sentimentData.candidates[0].content.parts[0].text.toLowerCase().trim()
 
     return new Response(JSON.stringify({
       text,

@@ -7,10 +7,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
+const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -22,49 +21,72 @@ serve(async (req) => {
       throw new Error('Message is required')
     }
 
-    // Create system message based on detected sentiment
-    let systemPrompt = "You are an empathetic mental wellness assistant. "
+    // Create system context based on detected sentiment
+    let context = "You are an empathetic mental wellness assistant. "
     if (sentiment === "negative") {
-      systemPrompt += "The user seems distressed, so be extra supportive and gentle. Offer comfort and practical coping strategies."
+      context += "The user seems distressed, so be extra supportive and gentle. Offer comfort and practical coping strategies."
     } else if (sentiment === "positive") {
-      systemPrompt += "The user seems to be in a good mood. Maintain and encourage this positive energy."
+      context += "The user seems to be in a good mood. Maintain and encourage this positive energy."
     } else {
-      systemPrompt += "Maintain a balanced and supportive tone."
+      context += "Maintain a balanced and supportive tone."
     }
 
-    console.log('Sending request to OpenAI with message:', message);
+    console.log('Sending request to Gemini with message:', message);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-        temperature: 0.7,
-      }),
+        contents: [{
+          role: "user",
+          parts: [{
+            text: `${context}\n\nUser message: ${message}`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
+      })
     })
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${errorData}`);
+      console.error('Gemini API error:', errorData);
+      throw new Error(`Gemini API error: ${errorData}`);
     }
 
     const data = await response.json()
-    console.log('OpenAI response:', data);
+    console.log('Gemini response:', data);
 
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error('Invalid response from OpenAI');
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid response from Gemini');
     }
     
     return new Response(JSON.stringify({
-      reply: data.choices[0].message.content,
+      reply: data.candidates[0].content.parts[0].text,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
