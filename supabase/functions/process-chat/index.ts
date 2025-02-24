@@ -21,7 +21,7 @@ serve(async (req) => {
       throw new Error('Message is required')
     }
 
-    // Create system context based on detected sentiment
+    // Create context based on detected sentiment
     let context = "You are an empathetic mental wellness assistant. "
     if (sentiment === "negative") {
       context += "The user seems distressed, so be extra supportive and gentle. Offer comfort and practical coping strategies."
