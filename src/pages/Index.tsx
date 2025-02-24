@@ -1,11 +1,24 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { EmotionCheck } from "@/components/EmotionCheck";
+import { WellnessProgress } from "@/components/WellnessProgress";
+import { CopingStrategies } from "@/components/CopingStrategies";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-gradient-to-b from-wellness-mint to-wellness-sky p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <header className="text-center space-y-4">
+          <h1 className="text-4xl font-bold tracking-tight">Mental Wellness Buddy</h1>
+          <p className="text-lg text-muted-foreground">
+            Your compassionate companion for emotional well-being
+          </p>
+        </header>
+        
+        <div className="grid gap-8">
+          <EmotionCheck />
+          <WellnessProgress />
+          <CopingStrategies />
+        </div>
       </div>
     </div>
   );
