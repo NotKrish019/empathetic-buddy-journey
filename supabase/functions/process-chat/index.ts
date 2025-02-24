@@ -18,6 +18,10 @@ serve(async (req) => {
   try {
     const { message, sentiment } = await req.json()
 
+    if (!message) {
+      throw new Error('Message is required')
+    }
+
     // Create system message based on detected sentiment
     let systemPrompt = "You are an empathetic mental wellness assistant. "
     if (sentiment === "negative") {
@@ -27,6 +31,8 @@ serve(async (req) => {
     } else {
       systemPrompt += "Maintain a balanced and supportive tone."
     }
+
+    console.log('Sending request to OpenAI with message:', message);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -44,7 +50,18 @@ serve(async (req) => {
       }),
     })
 
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('OpenAI API error:', errorData);
+      throw new Error(`OpenAI API error: ${errorData}`);
+    }
+
     const data = await response.json()
+    console.log('OpenAI response:', data);
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response from OpenAI');
+    }
     
     return new Response(JSON.stringify({
       reply: data.choices[0].message.content,
@@ -53,8 +70,11 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error in process-chat function:', error);
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: error.toString()
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
