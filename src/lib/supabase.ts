@@ -1,19 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Add debug logs to check if values are available
-console.log('Available environment variables:', {
-  supabaseUrl: window.SUPABASE_URL,
-  supabaseKey: window.SUPABASE_ANON_KEY
-});
+const supabaseUrl = 'https://lnbfdfwhjcarjimkjalu.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxuYmZkZndoamNhcmppbWtqYWx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA0MTU3OTAsImV4cCI6MjA1NTk5MTc5MH0.GpSuGlIwRsmRXyFK2SrCQp2u8D6J2qoy0hemkn0vsBo';
 
-// Define the variables on the window object
-declare global {
-  interface Window {
-    SUPABASE_URL: string;
-    SUPABASE_ANON_KEY: string;
-  }
-}
-
-export const supabase = createClient(window.SUPABASE_URL || '', window.SUPABASE_ANON_KEY || '');
-
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
