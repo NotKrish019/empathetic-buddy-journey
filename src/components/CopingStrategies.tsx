@@ -1,3 +1,4 @@
+
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Heart, Leaf, Moon, Sun } from 'lucide-react';
@@ -33,7 +34,6 @@ export const CopingStrategies = () => {
       case 'breathing':
         setIsBreathingModalOpen(true);
         break;
-      // Other actions can be added here
       default:
         break;
     }
@@ -41,22 +41,22 @@ export const CopingStrategies = () => {
 
   return (
     <>
-      <Card className="p-6 bg-wellness-sky/50 backdrop-blur-sm">
+      <Card className="p-6 bg-white/50 backdrop-blur-sm">
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-4">
             <Heart className="text-red-400 animate-float" />
             <h2 className="text-xl font-semibold">Coping Strategies</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {strategies.map((strategy) => (
-              <Card key={strategy.title} className="p-4 bg-white/50 backdrop-blur-sm">
-                <div className="flex flex-col items-center text-center space-y-2">
-                  <strategy.icon className="w-8 h-8 text-wellness-sage" />
+              <Card key={strategy.title} className="p-4 hover:bg-white/60 transition-colors duration-200">
+                <div className="flex flex-col items-center text-center space-y-3">
+                  <strategy.icon className="w-8 h-8 text-primary" />
                   <h3 className="font-medium">{strategy.title}</h3>
                   <p className="text-sm text-muted-foreground">{strategy.description}</p>
                   <Button 
                     variant="outline" 
-                    className="w-full mt-2"
+                    className="w-full mt-2 hover:bg-primary hover:text-white transition-colors duration-200"
                     onClick={() => handleStrategyClick(strategy.action)}
                   >
                     Try Now
