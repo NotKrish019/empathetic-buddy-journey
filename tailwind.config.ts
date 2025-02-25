@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -31,6 +30,13 @@ export default {
           lavender: "#E6E6FA",
           peach: "#FFE5B4",
           sky: "#B8E2F2"
+        },
+        chat: {
+          dark: "#041421",
+          navy: "#042630",
+          teal: "#4c7273",
+          light: "#86b9b0",
+          gray: "#d0d6d6"
         },
         primary: {
           DEFAULT: "hsl(var(--primary))",
