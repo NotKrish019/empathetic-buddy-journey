@@ -2,13 +2,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Smile, Frown, Meh, Heart, Award } from 'lucide-react';
+import { Smile, Frown, Meh, Heart } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 const emotions = [
-  { name: 'Happy', icon: Smile, color: 'text-green-500' },
-  { name: 'Neutral', icon: Meh, color: 'text-yellow-500' },
-  { name: 'Sad', icon: Frown, color: 'text-blue-500' },
+  { name: 'Happy', icon: Smile, color: 'text-chat-light' },
+  { name: 'Neutral', icon: Meh, color: 'text-chat-gray' },
+  { name: 'Sad', icon: Frown, color: 'text-chat-teal' },
 ];
 
 export const EmotionCheck = () => {
@@ -18,24 +18,26 @@ export const EmotionCheck = () => {
     setSelectedEmotion(emotion);
     toast({
       title: "Emotion logged!",
-      description: `Thank you for sharing how you're feeling. Remember, all emotions are valid.`,
+      description: "Thank you for sharing how you're feeling. Remember, all emotions are valid.",
     });
   };
 
   return (
-    <Card className="p-6 bg-wellness-mint/50 backdrop-blur-sm">
+    <Card className="p-6 bg-chat-navy border-chat-teal">
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Heart className="text-pink-500 animate-float" />
-          <h2 className="text-xl font-semibold">How are you feeling?</h2>
+          <Heart className="text-chat-light animate-float" />
+          <h2 className="text-xl font-semibold text-chat-gray">How are you feeling?</h2>
         </div>
         <div className="flex justify-center gap-4">
           {emotions.map((emotion) => (
             <Button
               key={emotion.name}
               variant={selectedEmotion === emotion.name ? "secondary" : "ghost"}
-              className={`p-4 hover:bg-wellness-sage/20 transition-all duration-300 ${
-                selectedEmotion === emotion.name ? 'ring-2 ring-wellness-sage' : ''
+              className={`p-4 transition-all duration-300 ${
+                selectedEmotion === emotion.name 
+                  ? 'bg-chat-teal/20 ring-2 ring-chat-teal text-white' 
+                  : 'hover:bg-chat-teal/10 text-chat-light'
               }`}
               onClick={() => handleEmotionSelect(emotion.name)}
             >

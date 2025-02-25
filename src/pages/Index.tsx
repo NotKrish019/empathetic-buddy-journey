@@ -17,16 +17,21 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-wellness-mint/50 to-wellness-sky/50 p-6">
+    <div className="min-h-screen bg-gradient-to-b from-chat-dark to-chat-navy p-6">
       <div className="max-w-5xl mx-auto space-y-6">
-        <header className="flex justify-between items-center bg-white/50 backdrop-blur-sm rounded-lg p-4">
+        <header className="flex justify-between items-center bg-chat-navy/50 backdrop-blur-sm rounded-lg p-4 border border-chat-teal/30">
           <div className="text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">Mental Wellness Buddy</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-chat-gray">Mental Wellness Buddy</h1>
+            <p className="text-sm text-chat-light mt-1">
               Your compassionate companion for emotional well-being
             </p>
           </div>
-          <Button variant="outline" onClick={handleLogout} size="sm">
+          <Button 
+            variant="outline" 
+            onClick={handleLogout} 
+            size="sm"
+            className="border-chat-teal/30 text-chat-light hover:bg-chat-teal/20"
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Sign Out
           </Button>

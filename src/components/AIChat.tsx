@@ -141,12 +141,12 @@ export const AIChat = () => {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-2xl mx-auto bg-chat-navy border-chat-teal">
       <CardHeader>
-        <CardTitle className="text-center">AI Wellness Assistant</CardTitle>
+        <CardTitle className="text-center text-chat-gray">AI Wellness Assistant</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="h-[400px] overflow-y-auto space-y-4 p-4 border rounded-lg">
+        <div className="h-[400px] overflow-y-auto space-y-4 p-4 border border-chat-teal/30 rounded-lg bg-chat-dark/50">
           {messages.map((message, index) => (
             <div
               key={index}
@@ -155,8 +155,8 @@ export const AIChat = () => {
               <div
                 className={`max-w-[80%] p-3 rounded-lg ${
                   message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
+                    ? 'bg-chat-teal text-white'
+                    : 'bg-chat-navy border border-chat-teal/30 text-chat-light'
                 }`}
               >
                 {message.content}
@@ -174,13 +174,14 @@ export const AIChat = () => {
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
               placeholder="Type your message..."
-              className="w-full p-2 border rounded-lg"
+              className="w-full p-2 rounded-lg bg-chat-dark border border-chat-teal/30 text-chat-light placeholder:text-chat-light/50"
               disabled={isProcessing || isRecording}
             />
           </div>
           <Button
             onClick={() => handleSubmit()}
             disabled={isProcessing || isRecording || !input.trim()}
+            className="bg-chat-teal hover:bg-chat-teal/80 text-white"
           >
             <Send className="h-4 w-4" />
           </Button>
@@ -188,6 +189,9 @@ export const AIChat = () => {
             onClick={isRecording ? stopRecording : startRecording}
             disabled={isProcessing}
             variant={isRecording ? "destructive" : "default"}
+            className={isRecording 
+              ? "bg-red-500 hover:bg-red-600 text-white" 
+              : "bg-chat-teal hover:bg-chat-teal/80 text-white"}
           >
             {isRecording ? (
               <StopCircle className="h-4 w-4" />
