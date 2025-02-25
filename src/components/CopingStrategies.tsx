@@ -41,22 +41,25 @@ export const CopingStrategies = () => {
 
   return (
     <>
-      <Card className="p-6 bg-white/50 backdrop-blur-sm">
+      <Card className="p-6 bg-chat-navy border-chat-teal">
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
-            <Heart className="text-red-400 animate-float" />
-            <h2 className="text-xl font-semibold">Coping Strategies</h2>
+            <Heart className="text-chat-light animate-float" />
+            <h2 className="text-xl font-semibold text-chat-gray">Coping Strategies</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {strategies.map((strategy) => (
-              <Card key={strategy.title} className="p-4 hover:bg-white/60 transition-colors duration-200">
+              <Card 
+                key={strategy.title} 
+                className="p-4 bg-chat-dark/50 border-chat-teal/30 hover:bg-chat-navy/80 transition-colors duration-200"
+              >
                 <div className="flex flex-col items-center text-center space-y-3">
-                  <strategy.icon className="w-8 h-8 text-primary" />
-                  <h3 className="font-medium">{strategy.title}</h3>
-                  <p className="text-sm text-muted-foreground">{strategy.description}</p>
+                  <strategy.icon className="w-8 h-8 text-chat-light" />
+                  <h3 className="font-medium text-chat-gray">{strategy.title}</h3>
+                  <p className="text-sm text-chat-light">{strategy.description}</p>
                   <Button 
                     variant="outline" 
-                    className="w-full mt-2 hover:bg-primary hover:text-white transition-colors duration-200"
+                    className="w-full mt-2 border-chat-teal/30 text-chat-light hover:bg-chat-teal hover:text-white transition-colors duration-200"
                     onClick={() => handleStrategyClick(strategy.action)}
                   >
                     Try Now
