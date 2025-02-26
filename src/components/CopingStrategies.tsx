@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Heart, Leaf, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { BreathingExercisesModal } from './BreathingExercisesModal';
+import { JournalEntryModal } from './JournalEntryModal';
 
 const strategies = [
   {
@@ -28,11 +29,34 @@ const strategies = [
 
 export const CopingStrategies = () => {
   const [isBreathingModalOpen, setIsBreathingModalOpen] = useState(false);
+  const [journalModal, setJournalModal] = useState<{
+    isOpen: boolean;
+    type: 'mindful' | 'nature';
+    title: string;
+  }>({
+    isOpen: false,
+    type: 'mindful',
+    title: '',
+  });
 
   const handleStrategyClick = (action: string) => {
     switch (action) {
       case 'breathing':
         setIsBreathingModalOpen(true);
+        break;
+      case 'mindful':
+        setJournalModal({
+          isOpen: true,
+          type: 'mindful',
+          title: 'Mindful Moment Journal',
+        });
+        break;
+      case 'nature':
+        setJournalModal({
+          isOpen: true,
+          type: 'nature',
+          title: 'Nature Connection Journal',
+        });
         break;
       default:
         break;
@@ -74,6 +98,13 @@ export const CopingStrategies = () => {
       <BreathingExercisesModal 
         isOpen={isBreathingModalOpen}
         onClose={() => setIsBreathingModalOpen(false)}
+      />
+
+      <JournalEntryModal 
+        isOpen={journalModal.isOpen}
+        onClose={() => setJournalModal(prev => ({ ...prev, isOpen: false }))}
+        type={journalModal.type}
+        title={journalModal.title}
       />
     </>
   );
