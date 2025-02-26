@@ -19,37 +19,66 @@ serve(async (req) => {
       throw new Error('No audio data provided')
     }
 
-    // Convert base64 to blob
-    const audioBlob = await fetch(`data:audio/webm;base64,${audio}`).then(r => r.blob())
-    
-    // Create form data for OpenAI
-    const formData = new FormData()
-    formData.append('file', audioBlob, 'audio.webm')
-    formData.append('model', 'whisper-1')
-
-    // Get transcription from OpenAI
-    const openAIResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    // Convert audio to base64 and create the request for Gemini's speech recognition
+    const response = await fetch('https://speech.googleapis.com/v1/speech:recognize', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('GEMINI_API_KEY')}`,
       },
-      body: formData,
+      body: JSON.stringify({
+        config: {
+          encoding: 'WEBM_OPUS',
+          sampleRateHertz: 48000,
+          languageCode: 'en-US',
+          model: 'default',
+          audioChannelCount: 1,
+        },
+        audio: {
+          content: audio
+        }
+      })
     })
 
-    if (!openAIResponse.ok) {
-      throw new Error(`OpenAI API error: ${await openAIResponse.text()}`)
+    if (!response.ok) {
+      throw new Error(`Speech Recognition error: ${await response.text()}`)
     }
 
-    const { text } = await openAIResponse.json()
-
-    // Basic sentiment analysis
-    let sentiment = 'neutral'
-    const lowerText = text.toLowerCase()
-    if (lowerText.match(/\b(happy|joy|excited|great|wonderful|love|amazing)\b/)) {
-      sentiment = 'positive'
-    } else if (lowerText.match(/\b(sad|angry|upset|terrible|hate|awful|worried|anxious)\b/)) {
-      sentiment = 'negative'
+    const data = await response.json()
+    
+    if (!data.results || data.results.length === 0) {
+      throw new Error('No transcription results')
     }
+
+    const text = data.results[0].alternatives[0].transcript
+
+    // Basic sentiment analysis using Gemini
+    const sentimentResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': Deno.env.get('GEMINI_API_KEY') || '',
+      },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [{
+            text: `Analyze the sentiment of this text and respond with ONLY ONE WORD (positive, negative, or neutral): "${text}"`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0,
+          maxOutputTokens: 1,
+        }
+      })
+    })
+
+    if (!sentimentResponse.ok) {
+      throw new Error(`Sentiment Analysis error: ${await sentimentResponse.text()}`)
+    }
+
+    const sentimentData = await sentimentResponse.json()
+    const sentiment = sentimentData.candidates[0].content.parts[0].text.toLowerCase().trim()
 
     return new Response(
       JSON.stringify({ text, sentiment }),
