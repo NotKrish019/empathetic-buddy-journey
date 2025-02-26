@@ -73,6 +73,10 @@ export const AIChat = () => {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
+      toast({
+        title: "Recording stopped",
+        description: "Processing your message...",
+      });
     }
   };
 
@@ -124,20 +128,21 @@ export const AIChat = () => {
 
       if (error) throw error;
 
-      // Split the response into lines and add them with delay
+      if (!data.reply) {
+        throw new Error('No response received');
+      }
+
       const lines = data.reply.split('\n').filter(Boolean);
       for (let i = 0; i < lines.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Delay between lines
+        await new Promise(resolve => setTimeout(resolve, 300));
         setMessages(prev => {
           const lastMessage = prev[prev.length - 1];
           if (lastMessage?.role === 'assistant') {
-            // Append to existing assistant message
             return [
               ...prev.slice(0, -1),
               { ...lastMessage, content: lastMessage.content + '\n' + lines[i] }
             ];
           } else {
-            // Create new assistant message
             return [...prev, { role: 'assistant', content: lines[i] }];
           }
         });
@@ -146,7 +151,7 @@ export const AIChat = () => {
       console.error('Error sending message:', error);
       toast({
         title: "Error",
-        description: "Could not send message",
+        description: "Could not send message. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -155,19 +160,19 @@ export const AIChat = () => {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto bg-chat-navy border-chat-teal">
-      <CardHeader>
-        <CardTitle className="text-center text-chat-gray">AI Wellness Assistant</CardTitle>
+    <Card className="w-full max-w-xl mx-auto bg-chat-navy border-chat-teal">
+      <CardHeader className="py-3">
+        <CardTitle className="text-center text-chat-gray text-lg">AI Wellness Assistant</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="h-[400px] overflow-y-auto space-y-4 p-4 border border-chat-teal/30 rounded-lg bg-chat-dark/50">
+      <CardContent className="space-y-3">
+        <div className="h-[300px] overflow-y-auto space-y-3 p-3 border border-chat-teal/30 rounded-lg bg-chat-dark/50">
           {messages.map((message, index) => (
             <div
               key={index}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] p-3 rounded-lg transition-all duration-500 ease-in-out animate-fade-in ${
+                className={`max-w-[80%] p-2.5 rounded-lg transition-all duration-300 ease-in-out animate-fade-in ${
                   message.role === 'user'
                     ? 'bg-chat-teal text-white'
                     : 'bg-chat-navy border border-chat-teal/30 text-chat-light'
@@ -186,11 +191,10 @@ export const AIChat = () => {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+            onKeyPress={(e) => e.key === 'Enter' && !isProcessing && handleSubmit()}
             placeholder="Type your message..."
             className="flex-1 p-2 rounded-lg bg-chat-dark border border-chat-teal/30 text-chat-light placeholder:text-chat-light/50"
             disabled={isProcessing || isRecording}
-            style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
           />
           <Button
             onClick={() => handleSubmit()}
