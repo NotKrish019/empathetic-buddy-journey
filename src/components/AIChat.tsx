@@ -124,10 +124,24 @@ export const AIChat = () => {
 
       if (error) throw error;
 
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.reply
-      }]);
+      // Split the response into lines and add them with delay
+      const lines = data.reply.split('\n').filter(Boolean);
+      for (let i = 0; i < lines.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Delay between lines
+        setMessages(prev => {
+          const lastMessage = prev[prev.length - 1];
+          if (lastMessage?.role === 'assistant') {
+            // Append to existing assistant message
+            return [
+              ...prev.slice(0, -1),
+              { ...lastMessage, content: lastMessage.content + '\n' + lines[i] }
+            ];
+          } else {
+            // Create new assistant message
+            return [...prev, { role: 'assistant', content: lines[i] }];
+          }
+        });
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -153,11 +167,12 @@ export const AIChat = () => {
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] p-3 rounded-lg ${
+                className={`max-w-[80%] p-3 rounded-lg transition-all duration-500 ease-in-out animate-fade-in ${
                   message.role === 'user'
                     ? 'bg-chat-teal text-white'
                     : 'bg-chat-navy border border-chat-teal/30 text-chat-light'
                 }`}
+                style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
               >
                 {message.content}
               </div>
@@ -167,17 +182,16 @@ export const AIChat = () => {
         </div>
         
         <div className="flex gap-2">
-          <div className="flex-1">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-              placeholder="Type your message..."
-              className="w-full p-2 rounded-lg bg-chat-dark border border-chat-teal/30 text-chat-light placeholder:text-chat-light/50"
-              disabled={isProcessing || isRecording}
-            />
-          </div>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+            placeholder="Type your message..."
+            className="flex-1 p-2 rounded-lg bg-chat-dark border border-chat-teal/30 text-chat-light placeholder:text-chat-light/50"
+            disabled={isProcessing || isRecording}
+            style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+          />
           <Button
             onClick={() => handleSubmit()}
             disabled={isProcessing || isRecording || !input.trim()}

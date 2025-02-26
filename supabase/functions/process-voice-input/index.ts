@@ -7,9 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
-const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -18,57 +15,52 @@ serve(async (req) => {
   try {
     const { audio } = await req.json()
 
-    // First, convert speech to text using Whisper API (still using OpenAI for this part)
-    const formData = new FormData()
+    if (!audio) {
+      throw new Error('No audio data provided')
+    }
+
+    // Convert base64 to blob
     const audioBlob = await fetch(`data:audio/webm;base64,${audio}`).then(r => r.blob())
+    
+    // Create form data for OpenAI
+    const formData = new FormData()
     formData.append('file', audioBlob, 'audio.webm')
     formData.append('model', 'whisper-1')
 
-    const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    // Get transcription from OpenAI
+    const openAIResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
       },
       body: formData,
     })
 
-    const { text } = await transcriptionResponse.json()
+    if (!openAIResponse.ok) {
+      throw new Error(`OpenAI API error: ${await openAIResponse.text()}`)
+    }
 
-    // Then, analyze sentiment using Gemini
-    const sentimentResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          role: "user",
-          parts: [{
-            text: `Analyze the sentiment of the following text and respond with only one word: "positive", "negative", or "neutral". Text to analyze: "${text}"`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0,
-          maxOutputTokens: 1
-        }
-      })
-    })
+    const { text } = await openAIResponse.json()
 
-    const sentimentData = await sentimentResponse.json()
-    const sentiment = sentimentData.candidates[0].content.parts[0].text.toLowerCase().trim()
+    // Basic sentiment analysis
+    let sentiment = 'neutral'
+    const lowerText = text.toLowerCase()
+    if (lowerText.match(/\b(happy|joy|excited|great|wonderful|love|amazing)\b/)) {
+      sentiment = 'positive'
+    } else if (lowerText.match(/\b(sad|angry|upset|terrible|hate|awful|worried|anxious)\b/)) {
+      sentiment = 'negative'
+    }
 
-    return new Response(JSON.stringify({
-      text,
-      sentiment,
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ text, sentiment }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
 
   } catch (error) {
     console.error('Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   }
 })
