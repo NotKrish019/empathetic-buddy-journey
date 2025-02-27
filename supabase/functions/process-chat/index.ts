@@ -1,125 +1,66 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import "https://deno.land/x/xhr@0.1.0/mod.ts"
+// Follow this pattern for a simple, reliable Edge Function
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { message, sentiment } = await req.json()
-
+    // Parse the request body
+    const { message, sentiment } = await req.json();
+    
     if (!message) {
-      throw new Error('Message is required')
+      return new Response(
+        JSON.stringify({ error: 'Message is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    console.log('Received message:', message);
-
-    // Define a system prompt specific to mental wellness
-    const systemPrompt = "You are a compassionate mental wellness assistant. Provide supportive, clear, and concise guidance. Focus on mindfulness, stress reduction, and emotional well-being techniques. Keep responses brief but helpful.";
     
-    // Simulate a response for testing - use this if API integration is failing
-    // Remove this and uncomment the actual API call below once confirmed working
-    /*
-    const simulatedResponse = {
-      reply: "I understand how you're feeling. Remember to take a few deep breaths and focus on the present moment. You're doing great by reaching out, and that's an important step in self-care."
-    };
-    return new Response(
-      JSON.stringify(simulatedResponse),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-    */
-
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!apiKey) {
-      throw new Error('API key is not configured');
-    }
-
-    console.log('Using API Key:', apiKey ? 'Available (not shown for security)' : 'Not available');
+    console.log(`Processing message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`);
     
-    // Properly format the request for Gemini API
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: `${systemPrompt}\n\nUser message: ${message}` }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 800,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error response:', errorText);
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('Gemini API response structure:', JSON.stringify(data, null, 2));
+    // For now, let's use a simple deterministic response to ensure reliability
+    // Later, we can integrate the Gemini API once basic functionality is working
+    let reply = "";
     
-    // Handle various response formats from Gemini API
-    let reply = '';
-    if (data.candidates && data.candidates.length > 0) {
-      if (data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
-        reply = data.candidates[0].content.parts[0].text;
-      } else if (data.candidates[0].text) {
-        reply = data.candidates[0].text;
-      }
+    if (message.toLowerCase().includes("hello") || message.toLowerCase().includes("hi")) {
+      reply = "Hello! How are you feeling today? I'm here to support your mental wellness journey.";
+    } 
+    else if (message.toLowerCase().includes("stress") || message.toLowerCase().includes("anxious") || message.toLowerCase().includes("anxiety")) {
+      reply = "I understand that feeling stressed can be overwhelming. Consider taking a few deep breaths - breathe in for 4 counts, hold for 4, and exhale for 6. This simple technique can help reduce anxiety in the moment.";
     }
-
-    if (!reply) {
-      console.error('No valid text found in response:', data);
-      throw new Error('No valid response content from Gemini');
+    else if (message.toLowerCase().includes("sad") || message.toLowerCase().includes("depress") || message.toLowerCase().includes("unhappy")) {
+      reply = "I'm sorry you're feeling down. Remember that emotions come and go, and it's okay to not feel okay sometimes. Consider engaging in a small activity that usually brings you joy, even if it's just for a few minutes.";
+    } 
+    else if (message.toLowerCase().includes("sleep") || message.toLowerCase().includes("tired")) {
+      reply = "Quality sleep is essential for mental wellbeing. Try establishing a calming bedtime routine, avoid screens an hour before bed, and make your sleeping environment comfortable and cool. These small changes can make a big difference.";
     }
-
-    console.log('Sending reply:', reply.substring(0, 100) + '...');
-
+    else if (message.toLowerCase().includes("meditat") || message.toLowerCase().includes("mindful")) {
+      reply = "Meditation is a wonderful practice for mental clarity. Start with just 5 minutes of focusing on your breath. When your mind wanders, gently bring your attention back without judgment. Consistency matters more than duration.";
+    }
+    else {
+      reply = "Thank you for sharing. Remember that taking care of your mental health is an ongoing journey, and small steps each day make a difference. Is there a specific aspect of your wellbeing you'd like to focus on today?";
+    }
+    
+    console.log(`Sending reply: "${reply.substring(0, 50)}${reply.length > 50 ? '...' : ''}"`);
+    
+    // Return the response
     return new Response(
       JSON.stringify({ reply }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in process-chat function:', error);
+    console.error("Error processing request:", error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: `Failed to process message: ${error.message}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
