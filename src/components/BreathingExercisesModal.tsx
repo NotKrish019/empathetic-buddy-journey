@@ -25,7 +25,7 @@ const breathingExercises = [
       "Exhale completely through your mouth, making a whoosh sound, for 8 counts",
       "Repeat this cycle 3-4 times"
     ],
-    videoUrl: "https://www.youtube.com/embed/PFxuPhn7nLc",
+    videoUrl: "https://www.youtube.com/embed/kpSkoXRrZnE",
     timing: { inhale: 4, hold: 7, exhale: 8 }
   },
   {
@@ -41,7 +41,7 @@ const breathingExercises = [
       "Hold your breath for 4 counts",
       "Repeat for 4-5 cycles or until calm"
     ],
-    videoUrl: "https://www.youtube.com/embed/tEmt1Znux58",
+    videoUrl: "https://www.youtube.com/embed/kpSkoXRrZnE",
     timing: { inhale: 4, hold: 4, exhale: 4, holdAfterExhale: 4 }
   },
   {
@@ -57,7 +57,7 @@ const breathingExercises = [
       "Feel your belly lower",
       "Repeat for 5-10 breaths"
     ],
-    videoUrl: "https://www.youtube.com/embed/UB3tSaiEbNY",
+    videoUrl: "https://www.youtube.com/embed/kpSkoXRrZnE",
     timing: { inhale: 4, exhale: 6 }
   },
   {
@@ -75,7 +75,7 @@ const breathingExercises = [
       "Release your ring finger and exhale through your left nostril",
       "Repeat for 5-10 cycles"
     ],
-    videoUrl: "https://www.youtube.com/embed/8VwufJrUhic",
+    videoUrl: "https://www.youtube.com/embed/kpSkoXRrZnE",
     timing: { inhale: 4, exhale: 4 }
   },
   {
@@ -92,7 +92,7 @@ const breathingExercises = [
       "Return to normal breathing",
       "Notice the increase in energy"
     ],
-    videoUrl: "https://www.youtube.com/embed/aXItOY0sLRY",
+    videoUrl: "https://www.youtube.com/embed/kpSkoXRrZnE",
     timing: { inhale: 1, exhale: 1 }
   }
 ];
@@ -193,6 +193,22 @@ export const BreathingExercisesModal = ({
     };
   }, [animationActive, currentPhase, selectedExercise]);
 
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  // Stop animation when dialog closes
+  useEffect(() => {
+    if (!isOpen && animationActive) {
+      setAnimationActive(false);
+    }
+  }, [isOpen, animationActive]);
+
   const toggleAnimation = () => {
     setAnimationActive(!animationActive);
   };
@@ -228,10 +244,10 @@ export const BreathingExercisesModal = ({
               <Button
                 key={exercise.name}
                 variant={selectedExercise.name === exercise.name ? "default" : "outline"}
-                className={`w-full text-left justify-start px-4 py-3 rounded-lg ${
+                className={`w-full text-left justify-start px-4 py-3 rounded-lg transition-all duration-200 transform hover:-translate-y-1 ${
                   selectedExercise.name === exercise.name
-                    ? "bg-chat-teal text-white border-chat-light"
-                    : "border-chat-teal/50 text-chat-light hover:bg-chat-teal/20"
+                    ? "bg-chat-teal text-white border-chat-light shadow-md"
+                    : "border-chat-teal/50 text-chat-light hover:bg-chat-teal/20 hover:shadow-sm"
                 }`}
                 onClick={() => {
                   setSelectedExercise(exercise);
@@ -279,6 +295,7 @@ export const BreathingExercisesModal = ({
                     <div 
                       ref={bubbleRef}
                       className="relative z-10 w-32 h-32 rounded-full bg-chat-teal/40 flex items-center justify-center transition-transform duration-500 border-2 border-chat-teal/60 shadow-lg shadow-chat-teal/20"
+                      style={{ transform: `scale(${currentPhase === 'inhale' ? 0.5 + phaseTime * 0.5 : currentPhase === 'exhale' ? 1 - phaseTime * 0.5 : 1})` }}
                     >
                       <div className="text-white text-xl font-medium">
                         {animationActive ? getPhaseText() : "Ready"}
@@ -287,7 +304,7 @@ export const BreathingExercisesModal = ({
                     <div className="mt-8 space-x-4">
                       <Button
                         onClick={toggleAnimation}
-                        className="bg-chat-teal hover:bg-chat-teal/80 text-white transition-colors"
+                        className="bg-chat-teal hover:bg-chat-teal/80 text-white transition-colors transform transition-transform active:scale-95 hover:scale-105"
                       >
                         {animationActive ? (
                           <>
@@ -304,7 +321,7 @@ export const BreathingExercisesModal = ({
                       <Button
                         onClick={toggleVideo}
                         variant="outline"
-                        className="border-chat-teal/30 text-chat-light hover:bg-chat-teal/20"
+                        className="border-chat-teal/30 text-chat-light hover:bg-chat-teal/20 transform transition-transform active:scale-95 hover:scale-105"
                       >
                         <Youtube className="mr-2 h-4 w-4" />
                         Watch Video
@@ -324,7 +341,7 @@ export const BreathingExercisesModal = ({
                     </div>
                     <Button
                       onClick={toggleVideo}
-                      className="mt-4 bg-chat-teal hover:bg-chat-teal/80 text-white transition-colors"
+                      className="mt-4 bg-chat-teal hover:bg-chat-teal/80 text-white transition-colors transform transition-transform active:scale-95 hover:scale-105"
                     >
                       Back to Interactive Guide
                     </Button>
