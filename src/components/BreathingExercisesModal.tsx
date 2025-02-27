@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -41,7 +40,7 @@ const breathingExercises = [
       "Hold your breath for 4 counts",
       "Repeat for 4-5 cycles or until calm"
     ],
-    videoUrl: "https://www.youtube.com/embed/kpSkoXRrZnE",
+    videoUrl: "https://www.youtube.com/embed/n6RbW2LtdFs",
     timing: { inhale: 4, hold: 4, exhale: 4, holdAfterExhale: 4 }
   },
   {
@@ -57,7 +56,7 @@ const breathingExercises = [
       "Feel your belly lower",
       "Repeat for 5-10 breaths"
     ],
-    videoUrl: "https://www.youtube.com/embed/kpSkoXRrZnE",
+    videoUrl: "https://www.youtube.com/embed/Q1Me3bMx5Dc",
     timing: { inhale: 4, exhale: 6 }
   },
   {
@@ -75,7 +74,7 @@ const breathingExercises = [
       "Release your ring finger and exhale through your left nostril",
       "Repeat for 5-10 cycles"
     ],
-    videoUrl: "https://www.youtube.com/embed/kpSkoXRrZnE",
+    videoUrl: "https://www.youtube.com/embed/CcWhcmQyeNk",
     timing: { inhale: 4, exhale: 4 }
   },
   {
@@ -92,7 +91,7 @@ const breathingExercises = [
       "Return to normal breathing",
       "Notice the increase in energy"
     ],
-    videoUrl: "https://www.youtube.com/embed/kpSkoXRrZnE",
+    videoUrl: "https://www.youtube.com/embed/w2Mi0a5dDhc",
     timing: { inhale: 1, exhale: 1 }
   }
 ];
@@ -114,7 +113,6 @@ export const BreathingExercisesModal = ({
   const animationRef = useRef<number | null>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
 
-  // Control the breathing animation
   useEffect(() => {
     if (!animationActive) {
       if (animationRef.current) {
@@ -161,7 +159,6 @@ export const BreathingExercisesModal = ({
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
-        // Move to next phase
         let nextPhase: 'inhale' | 'hold' | 'exhale' | 'holdAfterExhale' = 'inhale';
         
         switch (currentPhase) {
@@ -193,7 +190,6 @@ export const BreathingExercisesModal = ({
     };
   }, [animationActive, currentPhase, selectedExercise]);
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (animationRef.current) {
@@ -202,7 +198,6 @@ export const BreathingExercisesModal = ({
     };
   }, []);
 
-  // Stop animation when dialog closes
   useEffect(() => {
     if (!isOpen && animationActive) {
       setAnimationActive(false);
@@ -274,7 +269,6 @@ export const BreathingExercisesModal = ({
                 </p>
               </div>
               
-              {/* Interactive Breathing Animation */}
               <div className="relative bg-chat-dark/50 rounded-lg p-6 flex flex-col items-center justify-center min-h-[200px] border border-chat-teal/30">
                 {!showVideo ? (
                   <>
