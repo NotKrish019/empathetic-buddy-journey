@@ -92,7 +92,7 @@ export const AIChat = () => {
         throw error;
       }
 
-      if (data.text) {
+      if (data?.text) {
         await handleSubmit(data.text, data.sentiment);
       } else {
         throw new Error('No text transcribed from voice');
@@ -131,6 +131,7 @@ export const AIChat = () => {
       };
       setMessages(prev => [...prev, loadingMessage]);
 
+      console.log('Sending message to edge function:', messageText);
       const { data, error } = await supabase.functions.invoke('process-chat', {
         body: { 
           message: messageText,
@@ -140,12 +141,15 @@ export const AIChat = () => {
 
       if (error) {
         console.error('Chat processing error:', error);
-        throw error;
+        throw new Error(`Failed to process message: ${error.message}`);
       }
 
-      if (!data.reply) {
-        throw new Error('No response received');
+      if (!data || !data.reply) {
+        console.error('Invalid response data:', data);
+        throw new Error('No valid response received from the assistant');
       }
+
+      console.log('Received response:', data);
 
       // Remove the loading message
       setMessages(prev => prev.filter(msg => msg.content !== '...'));
@@ -170,6 +174,12 @@ export const AIChat = () => {
       console.error('Error sending message:', error);
       // Remove the loading message
       setMessages(prev => prev.filter(msg => msg.content !== '...'));
+      
+      // Add an error message from the assistant
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "I'm sorry, I'm having trouble responding right now. Please try again in a moment." 
+      }]);
       
       toast({
         title: "Error",

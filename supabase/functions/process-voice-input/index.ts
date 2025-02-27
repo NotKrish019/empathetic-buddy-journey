@@ -7,49 +7,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Process base64 in chunks to prevent memory issues
-function processBase64Chunks(base64String: string, chunkSize = 32768) {
-  const chunks: Uint8Array[] = [];
-  let position = 0;
-  
-  while (position < base64String.length) {
-    const chunk = base64String.slice(position, position + chunkSize);
-    const binaryChunk = atob(chunk);
-    const bytes = new Uint8Array(binaryChunk.length);
-    
-    for (let i = 0; i < binaryChunk.length; i++) {
-      bytes[i] = binaryChunk.charCodeAt(i);
-    }
-    
-    chunks.push(bytes);
-    position += chunkSize;
-  }
-
-  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return result;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { audio } = await req.json()
+    const { audio } = await req.json();
     
     if (!audio) {
-      throw new Error('No audio data provided')
+      throw new Error('No audio data provided');
     }
 
-    // Basic sentiment analysis from text content
+    console.log('Received audio data of length:', audio.length);
+
+    // For this implementation, we'll use a simplified approach
+    // that returns a mock transcription since the actual Google Speech API
+    // may require additional setup and billing
+    
+    // Simple sentiment analysis function
     const basicSentimentAnalysis = (text: string): string => {
       const lowerText = text.toLowerCase();
       
@@ -72,48 +48,24 @@ serve(async (req) => {
       return 'neutral';
     };
 
-    // For simplicity, we'll use a simpler approach to transcribe audio
-    // This mockup simulates what would happen with a real transcription service
-    const mockResponse = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': Deno.env.get('GEMINI_API_KEY') || '',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: "Create a short 1-2 sentence response as if you were a mental wellness assistant responding to someone who is asking for advice or sharing their feelings. Keep it supportive and compassionate."
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 100,
-        }
-      })
-    });
+    // For demo purposes, generate a simple response
+    // In production, you would connect to Speech-to-Text API
+    const mockText = "I'm feeling a bit stressed today but trying to stay positive.";
+    const sentiment = basicSentimentAnalysis(mockText);
 
-    if (!mockResponse.ok) {
-      throw new Error(`API error: ${await mockResponse.text()}`);
-    }
-
-    const mockData = await mockResponse.json();
-    const text = mockData.candidates[0].content.parts[0].text;
-    const sentiment = basicSentimentAnalysis(text);
+    console.log('Transcribed text:', mockText);
+    console.log('Detected sentiment:', sentiment);
 
     return new Response(
-      JSON.stringify({ text, sentiment }),
+      JSON.stringify({ text: mockText, sentiment }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in process-voice-input function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
