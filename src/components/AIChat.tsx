@@ -87,16 +87,21 @@ export const AIChat = () => {
         body: { audio: audioData }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Voice processing error:', error);
+        throw error;
+      }
 
       if (data.text) {
         await handleSubmit(data.text, data.sentiment);
+      } else {
+        throw new Error('No text transcribed from voice');
       }
     } catch (error) {
       console.error('Error processing voice input:', error);
       toast({
         title: "Error",
-        description: "Could not process voice input",
+        description: "Could not process voice input. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -119,6 +124,13 @@ export const AIChat = () => {
     setIsProcessing(true);
 
     try {
+      // Add a mock assistant message immediately to show processing
+      const loadingMessage: Message = {
+        role: 'assistant',
+        content: '...',
+      };
+      setMessages(prev => [...prev, loadingMessage]);
+
       const { data, error } = await supabase.functions.invoke('process-chat', {
         body: { 
           message: messageText,
@@ -126,18 +138,25 @@ export const AIChat = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Chat processing error:', error);
+        throw error;
+      }
 
       if (!data.reply) {
         throw new Error('No response received');
       }
 
+      // Remove the loading message
+      setMessages(prev => prev.filter(msg => msg.content !== '...'));
+
+      // Split reply into lines and animate them
       const lines = data.reply.split('\n').filter(Boolean);
       for (let i = 0; i < lines.length; i++) {
         await new Promise(resolve => setTimeout(resolve, 300));
         setMessages(prev => {
           const lastMessage = prev[prev.length - 1];
-          if (lastMessage?.role === 'assistant') {
+          if (lastMessage?.role === 'assistant' && lastMessage.content !== '...') {
             return [
               ...prev.slice(0, -1),
               { ...lastMessage, content: lastMessage.content + '\n' + lines[i] }
@@ -149,6 +168,9 @@ export const AIChat = () => {
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove the loading message
+      setMessages(prev => prev.filter(msg => msg.content !== '...'));
+      
       toast({
         title: "Error",
         description: "Could not send message. Please try again.",
@@ -160,29 +182,37 @@ export const AIChat = () => {
   };
 
   return (
-    <Card className="w-full max-w-xl mx-auto bg-chat-navy border-chat-teal">
-      <CardHeader className="py-3">
+    <Card className="w-full max-w-xl mx-auto bg-chat-navy border-chat-teal shadow-lg">
+      <CardHeader className="py-3 border-b border-chat-teal/30">
         <CardTitle className="text-center text-chat-gray text-lg">AI Wellness Assistant</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="h-[300px] overflow-y-auto space-y-3 p-3 border border-chat-teal/30 rounded-lg bg-chat-dark/50">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] p-2.5 rounded-lg transition-all duration-300 ease-in-out animate-fade-in ${
-                  message.role === 'user'
-                    ? 'bg-chat-teal text-white'
-                    : 'bg-chat-navy border border-chat-teal/30 text-chat-light'
-                }`}
-                style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
-              >
-                {message.content}
-              </div>
+      <CardContent className="space-y-3 p-3">
+        <div className="h-[300px] overflow-y-auto space-y-3 p-3 border border-chat-teal/30 rounded-lg bg-chat-dark/50 shadow-inner">
+          {messages.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-chat-light/50 text-sm">
+              Start a conversation to get wellness support...
             </div>
-          ))}
+          ) : (
+            messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] p-2.5 rounded-lg transition-all duration-300 ease-in-out animate-fade-in ${
+                    message.role === 'user'
+                      ? 'bg-chat-teal text-white'
+                      : message.content === '...' 
+                        ? 'bg-chat-navy/70 border border-chat-teal/30 text-chat-light/50 animate-pulse'
+                        : 'bg-chat-navy border border-chat-teal/30 text-chat-light'
+                  }`}
+                  style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                >
+                  {message.content}
+                </div>
+              </div>
+            ))
+          )}
           <div ref={messagesEndRef} />
         </div>
         
@@ -193,13 +223,13 @@ export const AIChat = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !isProcessing && handleSubmit()}
             placeholder="Type your message..."
-            className="flex-1 p-2 rounded-lg bg-chat-dark border border-chat-teal/30 text-chat-light placeholder:text-chat-light/50"
+            className="flex-1 p-2 rounded-lg bg-chat-dark border border-chat-teal/30 text-chat-light placeholder:text-chat-light/50 focus:ring-1 focus:ring-chat-teal focus:outline-none"
             disabled={isProcessing || isRecording}
           />
           <Button
             onClick={() => handleSubmit()}
             disabled={isProcessing || isRecording || !input.trim()}
-            className="bg-chat-teal hover:bg-chat-teal/80 text-white"
+            className="bg-chat-teal hover:bg-chat-teal/80 text-white transition-colors"
           >
             <Send className="h-4 w-4" />
           </Button>
@@ -208,8 +238,8 @@ export const AIChat = () => {
             disabled={isProcessing}
             variant={isRecording ? "destructive" : "default"}
             className={isRecording 
-              ? "bg-red-500 hover:bg-red-600 text-white" 
-              : "bg-chat-teal hover:bg-chat-teal/80 text-white"}
+              ? "bg-red-500 hover:bg-red-600 text-white transition-colors" 
+              : "bg-chat-teal hover:bg-chat-teal/80 text-white transition-colors"}
           >
             {isRecording ? (
               <StopCircle className="h-4 w-4" />
