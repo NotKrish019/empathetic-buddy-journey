@@ -45,8 +45,8 @@ serve(async (req) => {
     }
     contextPrompt += "Keep responses concise (1-3 sentences) and focus on practical mental wellness advice. Be empathetic and warm in tone.";
 
-    // Call Gemini API
-    const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+    // Updated Gemini API URL - using the latest version and model name
+    const apiUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent";
     const response = await fetch(`${apiUrl}?key=${geminiApiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -93,12 +93,13 @@ serve(async (req) => {
       throw new Error(`API error: ${data.error?.message || "Unknown error"}`);
     }
 
+    // The response structure has changed in the new API version
     if (!data.candidates || data.candidates.length === 0) {
       console.error("No response from Gemini API:", data);
       throw new Error("No response received from AI model");
     }
 
-    // Extract the response text
+    // Extract the response text from the updated API response format
     const reply = data.candidates[0].content.parts[0].text;
     console.log(`Sending reply: "${reply.substring(0, 50)}${reply.length > 50 ? '...' : ''}"`);
 
