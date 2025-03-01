@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Send, StopCircle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Mic, Send, StopCircle, MessageCircle, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -18,9 +19,11 @@ export const AIChat = () => {
   const [input, setInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -29,6 +32,16 @@ export const AIChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const toggleChat = () => {
+    setIsChatExpanded(!isChatExpanded);
+    // Focus the input field when chat is expanded
+    if (!isChatExpanded) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  };
 
   const startRecording = async () => {
     try {
@@ -109,6 +122,11 @@ export const AIChat = () => {
     const messageText = text || input;
     if (!messageText.trim()) return;
 
+    // Ensure chat is expanded when submitting a message
+    if (!isChatExpanded) {
+      setIsChatExpanded(true);
+    }
+
     const newMessage: Message = {
       role: 'user',
       content: messageText,
@@ -184,42 +202,89 @@ export const AIChat = () => {
   };
 
   return (
-    <Card className="w-full max-w-xl mx-auto bg-chat-navy border-chat-teal shadow-lg">
-      <CardHeader className="py-3 border-b border-chat-teal/30">
-        <CardTitle className="text-center text-chat-gray text-lg">AI Wellness Assistant</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 p-3">
-        <div className="h-[300px] overflow-y-auto space-y-3 p-3 border border-chat-teal/30 rounded-lg bg-chat-dark/50 shadow-inner">
-          {messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-chat-light/50 text-sm">
-              Start a conversation to get wellness support...
-            </div>
-          ) : (
-            messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] p-2.5 rounded-lg transition-all duration-300 ease-in-out animate-fade-in ${
-                    message.role === 'user'
-                      ? 'bg-chat-teal text-white'
-                      : message.content === '...' 
-                        ? 'bg-chat-navy/70 border border-chat-teal/30 text-chat-light/50 animate-pulse'
-                        : 'bg-chat-navy border border-chat-teal/30 text-chat-light'
-                  }`}
-                  style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
-                >
-                  {message.content}
+    <div className="w-full max-w-xl mx-auto relative z-10">
+      <AnimatePresence>
+        {isChatExpanded ? (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mb-2"
+          >
+            <Card className="bg-chat-navy border-chat-teal shadow-lg overflow-hidden">
+              <CardContent className="space-y-3 p-3">
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-chat-gray text-sm">AI Wellness Assistant</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={toggleChat}
+                    className="h-6 w-6 text-chat-gray hover:text-white hover:bg-chat-teal/20"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-              </div>
-            ))
+                <div className="h-[300px] overflow-y-auto space-y-3 p-3 border border-chat-teal/30 rounded-lg bg-chat-dark/50 shadow-inner">
+                  {messages.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-chat-light/50 text-sm">
+                      Start a conversation to get wellness support...
+                    </div>
+                  ) : (
+                    messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[80%] p-2.5 rounded-lg transition-all duration-300 ease-in-out animate-fade-in ${
+                            message.role === 'user'
+                              ? 'bg-chat-teal text-white'
+                              : message.content === '...' 
+                                ? 'bg-chat-navy/70 border border-chat-teal/30 text-chat-light/50 animate-pulse'
+                                : 'bg-chat-navy border border-chat-teal/30 text-chat-light'
+                          }`}
+                          style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                        >
+                          {message.content}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      {/* Always visible chat input bar */}
+      <motion.div 
+        className="w-full"
+        initial={false}
+        animate={{ 
+          backgroundColor: isChatExpanded ? 'rgba(4, 38, 48, 1)' : 'rgba(4, 38, 48, 0.9)',
+          borderRadius: isChatExpanded ? '0 0 0.75rem 0.75rem' : '0.75rem',
+          borderWidth: 1,
+          borderColor: 'rgba(76, 114, 115, 0.3)',
+        }}
+        transition={{ duration: 0.2 }}
+      >
+        <div className="p-2 flex gap-2 items-center">
+          {!isChatExpanded && (
+            <Button
+              onClick={toggleChat}
+              variant="ghost"
+              size="icon"
+              className="text-chat-gray hover:text-white hover:bg-chat-teal/20"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
           )}
-          <div ref={messagesEndRef} />
-        </div>
-        
-        <div className="flex gap-2">
+          
           <input
+            ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -228,10 +293,16 @@ export const AIChat = () => {
                 handleSubmit();
               }
             }}
-            placeholder="Type your message..."
+            onFocus={() => {
+              if (!isChatExpanded) {
+                setIsChatExpanded(true);
+              }
+            }}
+            placeholder="Type to chat..."
             className="flex-1 p-2 rounded-lg bg-chat-dark border border-chat-teal/30 text-chat-light placeholder:text-chat-light/50 focus:ring-1 focus:ring-chat-teal focus:outline-none"
             disabled={isProcessing || isRecording}
           />
+          
           <Button
             onClick={() => handleSubmit()}
             disabled={isProcessing || isRecording || !input.trim()}
@@ -239,6 +310,7 @@ export const AIChat = () => {
           >
             <Send className="h-4 w-4" />
           </Button>
+          
           <Button
             onClick={isRecording ? stopRecording : startRecording}
             disabled={isProcessing}
@@ -254,7 +326,7 @@ export const AIChat = () => {
             )}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </motion.div>
+    </div>
   );
 };

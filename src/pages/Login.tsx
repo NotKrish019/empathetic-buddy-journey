@@ -30,7 +30,7 @@ const Login = () => {
           supabaseClient={supabase}
           appearance={{ theme: ThemeSupa }}
           theme="light"
-          providers={['google']}
+          providers={[]} // Removed 'google' to disable Google login
           redirectTo={window.location.origin}
         />
       </Card>
