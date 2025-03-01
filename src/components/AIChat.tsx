@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -97,6 +96,7 @@ export const AIChat = () => {
     setIsProcessing(true);
     try {
       // For now, let's use a simple fixed transcription to ensure reliability
+      // In a real scenario, you would use a speech-to-text API here
       const transcribedText = "I'm feeling a bit stressed today.";
       const sentiment = "negative";
       

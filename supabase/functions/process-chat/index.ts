@@ -1,6 +1,9 @@
 
-// Follow this pattern for a simple, reliable Edge Function
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+// Get the API key from environment variables
+const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,33 +28,81 @@ serve(async (req) => {
     }
     
     console.log(`Processing message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`);
+    console.log(`Sentiment: ${sentiment || 'not provided'}`);
+
+    if (!geminiApiKey) {
+      console.error("Gemini API key not found");
+      return new Response(
+        JSON.stringify({ error: "API configuration issue" }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Prepare the context based on sentiment if available
+    let contextPrompt = "You are a supportive mental wellness assistant. ";
+    if (sentiment) {
+      contextPrompt += `The user seems to be feeling ${sentiment}. Tailor your response to be supportive and helpful for someone feeling this way. `;
+    }
+    contextPrompt += "Keep responses concise (1-3 sentences) and focus on practical mental wellness advice. Be empathetic and warm in tone.";
+
+    // Call Gemini API
+    const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+    const response = await fetch(`${apiUrl}?key=${geminiApiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: contextPrompt },
+              { text: `User message: ${message}` }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 200,
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
     
-    // For now, let's use a simple deterministic response to ensure reliability
-    // Later, we can integrate the Gemini API once basic functionality is working
-    let reply = "";
-    
-    if (message.toLowerCase().includes("hello") || message.toLowerCase().includes("hi")) {
-      reply = "Hello! How are you feeling today? I'm here to support your mental wellness journey.";
-    } 
-    else if (message.toLowerCase().includes("stress") || message.toLowerCase().includes("anxious") || message.toLowerCase().includes("anxiety")) {
-      reply = "I understand that feeling stressed can be overwhelming. Consider taking a few deep breaths - breathe in for 4 counts, hold for 4, and exhale for 6. This simple technique can help reduce anxiety in the moment.";
+    if (!response.ok) {
+      console.error("Gemini API error:", data);
+      throw new Error(`API error: ${data.error?.message || "Unknown error"}`);
     }
-    else if (message.toLowerCase().includes("sad") || message.toLowerCase().includes("depress") || message.toLowerCase().includes("unhappy")) {
-      reply = "I'm sorry you're feeling down. Remember that emotions come and go, and it's okay to not feel okay sometimes. Consider engaging in a small activity that usually brings you joy, even if it's just for a few minutes.";
-    } 
-    else if (message.toLowerCase().includes("sleep") || message.toLowerCase().includes("tired")) {
-      reply = "Quality sleep is essential for mental wellbeing. Try establishing a calming bedtime routine, avoid screens an hour before bed, and make your sleeping environment comfortable and cool. These small changes can make a big difference.";
+
+    if (!data.candidates || data.candidates.length === 0) {
+      console.error("No response from Gemini API:", data);
+      throw new Error("No response received from AI model");
     }
-    else if (message.toLowerCase().includes("meditat") || message.toLowerCase().includes("mindful")) {
-      reply = "Meditation is a wonderful practice for mental clarity. Start with just 5 minutes of focusing on your breath. When your mind wanders, gently bring your attention back without judgment. Consistency matters more than duration.";
-    }
-    else {
-      reply = "Thank you for sharing. Remember that taking care of your mental health is an ongoing journey, and small steps each day make a difference. Is there a specific aspect of your wellbeing you'd like to focus on today?";
-    }
-    
+
+    // Extract the response text
+    const reply = data.candidates[0].content.parts[0].text;
     console.log(`Sending reply: "${reply.substring(0, 50)}${reply.length > 50 ? '...' : ''}"`);
-    
-    // Return the response
+
+    // Return the AI response
     return new Response(
       JSON.stringify({ reply }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
