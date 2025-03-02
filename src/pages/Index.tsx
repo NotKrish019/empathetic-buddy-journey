@@ -1,8 +1,8 @@
 
-import EmotionCheck from "@/components/EmotionCheck";
-import WellnessProgress from "@/components/WellnessProgress";
-import CopingStrategies from "@/components/CopingStrategies";
-import AIChat from "@/components/AIChat";
+import { EmotionCheck } from "@/components/EmotionCheck";
+import { WellnessProgress } from "@/components/WellnessProgress";
+import { CopingStrategies } from "@/components/CopingStrategies";
+import { AIChat } from "@/components/AIChat";
 import PersonalizedCourseSection from "@/components/PersonalizedCourseSection";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
