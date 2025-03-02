@@ -1,8 +1,9 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Send, Mic, StopCircle } from 'lucide-react';
-import { transcribeAudio, processAudioData, useAudioRecorder } from './audioUtils';
+import { analyzeSentiment, useAudioRecorder } from './audioUtils';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ChatInputProps {
   isProcessing: boolean;
@@ -22,29 +23,80 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onFocus 
 }) => {
   const [input, setInput] = useState('');
-  const { startRecording, stopRecording, chunksRef } = useAudioRecorder();
-  
+  const { toast } = useToast();
+  const { 
+    isListening, 
+    startRecording, 
+    stopRecording, 
+    interimTranscript, 
+    finalTranscript, 
+    error 
+  } = useAudioRecorder();
+
+  // Update UI when recording status changes
+  useEffect(() => {
+    setIsRecording(isListening);
+  }, [isListening, setIsRecording]);
+
+  // Show error toast if speech recognition fails
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Speech Recognition Error",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  // Update input field with transcript
+  useEffect(() => {
+    if (interimTranscript) {
+      setInput(interimTranscript);
+    }
+  }, [interimTranscript]);
+
+  // Submit final transcript when available
+  useEffect(() => {
+    if (finalTranscript && isListening === false) {
+      const trimmedTranscript = finalTranscript.trim();
+      if (trimmedTranscript) {
+        const sentiment = analyzeSentiment(trimmedTranscript);
+        handleSubmitVoice(trimmedTranscript, sentiment);
+      }
+    }
+  }, [finalTranscript, isListening]);
+
   const handleStartRecording = async () => {
     const started = await startRecording();
     if (started) {
-      setIsRecording(true);
+      toast({
+        title: "Recording started",
+        description: "Speak clearly into your microphone",
+      });
     }
   };
 
   const handleStopRecording = async () => {
-    const chunks = stopRecording();
-    setIsRecording(false);
-    
-    if (chunks.length > 0) {
-      const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-      const base64Audio = await processAudioData(audioBlob);
-      
-      // In a real app, this would use the base64Audio for transcription
-      // For now, we'll use a mock transcription
-      const transcribedText = transcribeAudio();
-      const sentiment = "negative"; // Simplified sentiment analysis
-      
-      await onSubmit(transcribedText, sentiment);
+    stopRecording();
+    toast({
+      title: "Recording stopped",
+      description: "Processing your message...",
+    });
+  };
+
+  const handleSubmitVoice = async (text: string, sentiment?: string) => {
+    if (text.trim()) {
+      await onSubmit(text.trim(), sentiment);
+      setInput('');
+    }
+  };
+
+  const handleSubmitText = async () => {
+    if (input.trim()) {
+      const sentiment = analyzeSentiment(input);
+      await onSubmit(input.trim(), sentiment);
+      setInput('');
     }
   };
 
@@ -56,24 +108,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyPress={(e) => {
-          if (e.key === 'Enter' && !isProcessing && input.trim()) {
-            onSubmit(input, undefined);
-            setInput('');
+          if (e.key === 'Enter' && !isProcessing && !isRecording && input.trim()) {
+            handleSubmitText();
           }
         }}
         onFocus={onFocus}
-        placeholder="Type to chat..."
-        className="flex-1 p-2 rounded-lg bg-chat-dark border border-chat-teal/30 text-chat-light placeholder:text-chat-light/50 focus:ring-1 focus:ring-chat-teal focus:outline-none"
+        placeholder={isRecording ? "Listening..." : "Type to chat..."}
+        className={`flex-1 p-2 rounded-lg bg-chat-dark border transition-all duration-300 ${
+          isRecording 
+            ? "border-red-500 text-chat-light placeholder:text-red-300" 
+            : "border-chat-teal/30 text-chat-light placeholder:text-chat-light/50"
+        } focus:ring-1 focus:ring-chat-teal focus:outline-none`}
         disabled={isProcessing || isRecording}
       />
       
       <Button
-        onClick={() => {
-          if (input.trim()) {
-            onSubmit(input, undefined);
-            setInput('');
-          }
-        }}
+        onClick={handleSubmitText}
         disabled={isProcessing || isRecording || !input.trim()}
         className="bg-chat-teal hover:bg-chat-teal/80 text-white transition-colors"
       >
@@ -85,8 +135,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         disabled={isProcessing}
         variant={isRecording ? "destructive" : "default"}
         className={isRecording 
-          ? "bg-red-500 hover:bg-red-600 text-white transition-colors" 
+          ? "bg-red-500 hover:bg-red-600 text-white transition-colors animate-pulse" 
           : "bg-chat-teal hover:bg-chat-teal/80 text-white transition-colors"}
+        aria-label={isRecording ? "Stop recording" : "Start voice input"}
       >
         {isRecording ? (
           <StopCircle className="h-4 w-4" />

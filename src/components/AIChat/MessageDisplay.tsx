@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Message } from './types';
+import { HeartPulse, ThumbsDown, ThumbsUp } from 'lucide-react';
 
 interface MessageDisplayProps {
   messages: Message[];
@@ -16,6 +17,21 @@ export const MessageDisplay: React.FC<MessageDisplayProps> = ({ messages }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const getSentimentIcon = (sentiment?: string) => {
+    if (!sentiment) return null;
+    
+    switch (sentiment) {
+      case 'positive':
+        return <ThumbsUp className="h-3 w-3 text-green-400" />;
+      case 'negative':
+        return <ThumbsDown className="h-3 w-3 text-red-400" />;
+      case 'neutral':
+        return <HeartPulse className="h-3 w-3 text-blue-400" />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="h-[300px] overflow-y-auto space-y-3 p-3 border border-chat-teal/30 rounded-lg bg-chat-dark/50 shadow-inner">
@@ -40,6 +56,12 @@ export const MessageDisplay: React.FC<MessageDisplayProps> = ({ messages }) => {
               style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
             >
               {message.content}
+              {message.role === 'user' && message.sentiment && (
+                <div className="flex items-center mt-1 opacity-70 text-xs">
+                  {getSentimentIcon(message.sentiment)}
+                  <span className="ml-1 capitalize">{message.sentiment}</span>
+                </div>
+              )}
             </div>
           </div>
         ))
