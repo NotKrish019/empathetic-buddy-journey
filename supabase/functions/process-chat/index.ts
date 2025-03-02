@@ -3,7 +3,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 // Get the API key from environment variables
-const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+const groqApiKey = Deno.env.get("GROQ_API_KEY");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,8 +30,8 @@ serve(async (req) => {
     console.log(`Processing message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`);
     console.log(`Sentiment: ${sentiment || 'not provided'}`);
 
-    if (!geminiApiKey) {
-      console.error("Gemini API key not found");
+    if (!groqApiKey) {
+      console.error("Groq API key not found");
       return new Response(
         JSON.stringify({ error: "API configuration issue" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -39,71 +39,55 @@ serve(async (req) => {
     }
 
     // Prepare the context based on sentiment if available
-    let contextPrompt = "You are a supportive mental wellness assistant. ";
+    let systemPrompt = "You are a supportive mental wellness assistant. ";
     if (sentiment) {
-      contextPrompt += `The user seems to be feeling ${sentiment}. Tailor your response to be supportive and helpful for someone feeling this way. `;
+      systemPrompt += `The user seems to be feeling ${sentiment}. Tailor your response to be supportive and helpful for someone feeling this way. `;
     }
-    contextPrompt += "Keep responses concise (1-3 sentences) and focus on practical mental wellness advice. Be empathetic and warm in tone.";
+    systemPrompt += "Keep responses concise (1-3 sentences) and focus on practical mental wellness advice. Be empathetic and warm in tone.";
 
-    // Using the correct endpoint for the free version of Gemini API
-    const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-    console.log("Calling Gemini API at:", apiUrl);
+    // Using Groq API
+    const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
+    console.log("Calling Groq API...");
     
-    const response = await fetch(`${apiUrl}?key=${geminiApiKey}`, {
+    const response = await fetch(apiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${groqApiKey}`,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
-        contents: [
+        model: "llama3-8b-8192", // Using Llama 3 8B model, which is fast and efficient
+        messages: [
           {
-            parts: [
-              { text: contextPrompt },
-              { text: `User message: ${message}` }
-            ]
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: message
           }
         ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 200,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
+        temperature: 0.7,
+        max_tokens: 200
       })
     });
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error("Gemini API error response:", errorData);
+      console.error("Groq API error response:", errorData);
       throw new Error(`API request failed with status ${response.status}: ${errorData}`);
     }
 
     const data = await response.json();
-    console.log("Gemini API response:", JSON.stringify(data).substring(0, 200) + "...");
+    console.log("Groq API response received");
 
-    // Extract the response text from the API response format
-    if (!data.candidates || data.candidates.length === 0) {
-      console.error("No response from Gemini API:", data);
+    // Extract the response text from the API response
+    if (!data.choices || data.choices.length === 0) {
+      console.error("No response from Groq API:", data);
       throw new Error("No response received from AI model");
     }
 
-    const reply = data.candidates[0].content.parts[0].text;
+    const reply = data.choices[0].message.content;
     console.log(`Sending reply: "${reply.substring(0, 50)}${reply.length > 50 ? '...' : ''}"`);
 
     // Return the AI response
