@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      course_modules: {
+        Row: {
+          content: string
+          created_at: string | null
+          day_number: number
+          description: string
+          gender_focus: string
+          id: string
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          day_number: number
+          description: string
+          gender_focus: string
+          id?: string
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          day_number?: number
+          description?: string
+          gender_focus?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string
@@ -32,6 +62,72 @@ export type Database = {
           entry_type?: string
           id?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_course_progress: {
+        Row: {
+          completed_days: number[] | null
+          current_day: number
+          id: string
+          last_activity: string | null
+          start_date: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_days?: number[] | null
+          current_day?: number
+          id?: string
+          last_activity?: string | null
+          start_date?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_days?: number[] | null
+          current_day?: number
+          id?: string
+          last_activity?: string | null
+          start_date?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_questionnaire: {
+        Row: {
+          attachment_level: number | null
+          completed_at: string | null
+          emotional_pattern: number | null
+          exercise_frequency: number | null
+          gender: string
+          id: string
+          sleep_quality: number | null
+          social_support: number | null
+          stress_level: number | null
+          user_id: string
+        }
+        Insert: {
+          attachment_level?: number | null
+          completed_at?: string | null
+          emotional_pattern?: number | null
+          exercise_frequency?: number | null
+          gender: string
+          id?: string
+          sleep_quality?: number | null
+          social_support?: number | null
+          stress_level?: number | null
+          user_id: string
+        }
+        Update: {
+          attachment_level?: number | null
+          completed_at?: string | null
+          emotional_pattern?: number | null
+          exercise_frequency?: number | null
+          gender?: string
+          id?: string
+          sleep_quality?: number | null
+          social_support?: number | null
+          stress_level?: number | null
           user_id?: string
         }
         Relationships: []
