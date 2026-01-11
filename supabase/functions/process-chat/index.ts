@@ -1,9 +1,4 @@
-
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-// Get the API key from environment variables
-const groqApiKey = Deno.env.get("GROQ_API_KEY");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,8 +25,9 @@ serve(async (req) => {
     console.log(`Processing message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`);
     console.log(`Sentiment: ${sentiment || 'not provided'}`);
 
-    if (!groqApiKey) {
-      console.error("Groq API key not found");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY not found");
       return new Response(
         JSON.stringify({ error: "API configuration issue" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -45,18 +41,17 @@ serve(async (req) => {
     }
     systemPrompt += "Keep responses concise (1-3 sentences) and focus on practical mental wellness advice. Be empathetic and warm in tone.";
 
-    // Using Groq API
-    const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
-    console.log("Calling Groq API...");
+    // Using Lovable AI Gateway
+    console.log("Calling Lovable AI Gateway...");
     
-    const response = await fetch(apiUrl, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${groqApiKey}`,
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama3-8b-8192", // Using Llama 3 8B model, which is fast and efficient
+        model: "google/gemini-3-flash-preview",
         messages: [
           {
             role: "system",
@@ -67,23 +62,34 @@ serve(async (req) => {
             content: message
           }
         ],
-        temperature: 0.7,
         max_tokens: 200
       })
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       const errorData = await response.text();
-      console.error("Groq API error response:", errorData);
+      console.error("Lovable AI error response:", errorData);
       throw new Error(`API request failed with status ${response.status}: ${errorData}`);
     }
 
     const data = await response.json();
-    console.log("Groq API response received");
+    console.log("Lovable AI response received");
 
     // Extract the response text from the API response
     if (!data.choices || data.choices.length === 0) {
-      console.error("No response from Groq API:", data);
+      console.error("No response from Lovable AI:", data);
       throw new Error("No response received from AI model");
     }
 
